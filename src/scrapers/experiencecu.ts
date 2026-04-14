@@ -16,8 +16,8 @@ export const experienceCuScraper: Scraper = {
         Accept: 'text/html',
       })
       
-      if (!res?.ok) {
-        console.error(`[experiencecu] Failed to fetch. Status: ${res.status}`)
+     if (!res || !res.ok) {
+        console.error(`[experiencecu] Failed to fetch. Status: ${res?.status || 'Network Error'}`)
         return events
       }
 
