@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio'
 import type { Scraper, ScrapedEvent } from './base'
+import { fetchCached, truncateText, parseDate } from './fetch-utils'
 
 const BASE_URL = 'https://www.champaignil.gov'
 
@@ -10,37 +11,44 @@ export const cityOfChampaignScraper: Scraper = {
     const events: ScrapedEvent[] = []
 
     try {
-      const res = await fetch(`${BASE_URL}/Calendar.aspx`, {
-        headers: {
-          'User-Agent': 'CU-Events/1.0 (cu-events.com)',
-          Accept: 'text/html',
-        },
-        signal: AbortSignal.timeout(15000),
-      })
+      const res = await fetchCached(`${BASE_URL}/Calendar.aspx`, { Accept: 'text/html' })
 
+      // null → 304 Not Modified; nothing new to scrape
+      if (res === null) return events
       if (!res.ok) return events
 
       const html = await res.text()
       const $ = cheerio.load(html)
 
-      // Parse the City of Champaign events calendar
       $('.fc-event, .calendar-event, .event-listing, tr.event').each((_, el) => {
         const $el = $(el)
-        const title = $el.find('.fc-event-title, .event-title, td.title, h3').first().text().trim()
+        const title = $el
+          .find('.fc-event-title, .event-title, td.title, h3')
+          .first()
+          .text()
+          .trim()
         if (!title || title.length < 3) return
 
-        const linkEl = $el.find('a').first()
-        const relUrl = linkEl.attr('href') || ''
+        const relUrl = $el.find('a').first().attr('href') || ''
         const url = relUrl.startsWith('http') ? relUrl : `${BASE_URL}${relUrl}`
 
-        const dateText = $el.find('.date, .event-date, td.date, time').first().text().trim()
-        const startDatetime = parseDateText(dateText)
+        const dateText = $el
+          .find('.date, .event-date, td.date, time')
+          .first()
+          .text()
+          .trim()
+        const startDatetime = parseDate(dateText)
         if (!startDatetime) return
 
-        const sourceEventId = relUrl.split('?').pop() || title.toLowerCase().replace(/\s+/g, '-')
+        const description = $el.find('.description, p').first().text().trim()
+
+        const sourceEventId =
+          relUrl.split('?').pop() ||
+          title.toLowerCase().replace(/\s+/g, '-')
 
         events.push({
           title,
+          description: description ? truncateText(description) : undefined,
           startDatetime,
           city: 'Champaign',
           url: url || `${BASE_URL}/Calendar.aspx`,
@@ -55,15 +63,4 @@ export const cityOfChampaignScraper: Scraper = {
 
     return events
   },
-}
-
-function parseDateText(text: string): string | null {
-  if (!text) return null
-  try {
-    const d = new Date(text)
-    if (isNaN(d.getTime())) return null
-    return d.toISOString().replace('T', ' ').slice(0, 19)
-  } catch {
-    return null
-  }
 }

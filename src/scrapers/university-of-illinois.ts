@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio'
 import type { Scraper, ScrapedEvent } from './base'
+import { fetchCached, stripHtml, truncateText, parseDate } from './fetch-utils'
 
 const BASE_URL = 'https://calendars.illinois.edu'
 
@@ -10,18 +11,15 @@ export const universityOfIlloisScraper: Scraper = {
     const events: ScrapedEvent[] = []
 
     try {
-      // UIUC Events Calendar RSS/JSON feed
-      const res = await fetch(`${BASE_URL}/UIUC/calendar.rss`, {
-        headers: {
-          'User-Agent': 'CU-Events/1.0 (cu-events.com)',
-          Accept: 'application/rss+xml, text/xml, */*',
-        },
-        signal: AbortSignal.timeout(15000),
+      const res = await fetchCached(`${BASE_URL}/UIUC/calendar.rss`, {
+        Accept: 'application/rss+xml, text/xml, */*',
       })
 
+      // null → 304 Not Modified; skip parsing, existing DB records are current
+      if (res === null) return events
+
       if (!res.ok) {
-        // Try the HTML calendar as fallback
-        return await scrapeHtmlCalendar()
+        return scrapeHtmlCalendar()
       }
 
       const xml = await res.text()
@@ -34,16 +32,21 @@ export const universityOfIlloisScraper: Scraper = {
 
         const link = $el.find('link').first().text().trim()
         const pubDate = $el.find('pubDate').first().text().trim()
-        const description = $el.find('description').first().text().replace(/<[^>]+>/g, '').trim()
+        const rawDesc = $el.find('description').first().text().trim()
+        const description = rawDesc
+          ? truncateText(stripHtml(rawDesc))
+          : undefined
 
-        const startDatetime = pubDate ? new Date(pubDate).toISOString().replace('T', ' ').slice(0, 19) : null
+        const startDatetime = parseDate(pubDate)
         if (!startDatetime) return
 
-        const sourceEventId = link.split('/').filter(Boolean).pop() || title.toLowerCase().replace(/\s+/g, '-').slice(0, 50)
+        const sourceEventId =
+          link.split('/').filter(Boolean).pop() ||
+          title.toLowerCase().replace(/\s+/g, '-').slice(0, 50)
 
         events.push({
           title,
-          description: description || undefined,
+          description,
           startDatetime,
           city: 'Urbana',
           url: link || `${BASE_URL}/UIUC`,
@@ -62,17 +65,10 @@ export const universityOfIlloisScraper: Scraper = {
 
 async function scrapeHtmlCalendar(): Promise<ScrapedEvent[]> {
   const events: ScrapedEvent[] = []
-  const BASE = 'https://calendars.illinois.edu'
 
   try {
-    const res = await fetch(`${BASE}/UIUC`, {
-      headers: {
-        'User-Agent': 'CU-Events/1.0 (cu-events.com)',
-        Accept: 'text/html',
-      },
-      signal: AbortSignal.timeout(15000),
-    })
-    if (!res.ok) return events
+    const res = await fetchCached(`${BASE_URL}/UIUC`, { Accept: 'text/html' })
+    if (!res?.ok) return events
 
     const html = await res.text()
     const $ = cheerio.load(html)
@@ -83,16 +79,9 @@ async function scrapeHtmlCalendar(): Promise<ScrapedEvent[]> {
       if (!title || title.length < 3) return
 
       const link = $el.find('a').first().attr('href') || ''
-      const url = link.startsWith('http') ? link : `${BASE}${link}`
+      const url = link.startsWith('http') ? link : `${BASE_URL}${link}`
       const dateText = $el.find('time, .date').first().text().trim()
-
-      const startDatetime = dateText ? (() => {
-        try {
-          const d = new Date(dateText)
-          return isNaN(d.getTime()) ? null : d.toISOString().replace('T', ' ').slice(0, 19)
-        } catch { return null }
-      })() : null
-
+      const startDatetime = parseDate(dateText)
       if (!startDatetime) return
 
       events.push({
@@ -101,7 +90,9 @@ async function scrapeHtmlCalendar(): Promise<ScrapedEvent[]> {
         city: 'Urbana',
         url,
         source: 'university-of-illinois',
-        sourceEventId: link.split('/').filter(Boolean).pop() || title.toLowerCase().replace(/\s+/g, '-').slice(0, 50),
+        sourceEventId:
+          link.split('/').filter(Boolean).pop() ||
+          title.toLowerCase().replace(/\s+/g, '-').slice(0, 50),
         categorySlug: 'education',
       })
     })
