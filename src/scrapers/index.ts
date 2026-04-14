@@ -56,13 +56,26 @@ export async function runAllScrapers() {
     let errorMessage: string | undefined
 
     try {
+      console.log(`\n[scrapers] ========================================`)
       console.log(`[scrapers] Running ${scraper.name}…`)
       const scraped = await scraper.run()
       eventsFound = scraped.length
       console.log(`[scrapers] ${scraper.name}: found ${eventsFound} events`)
 
       for (const event of scraped) {
-        if (!event.title || !event.startDatetime || !event.sourceEventId) continue
+        // Detailed logging so we know EXACTLY what is failing validation
+        if (!event.title) {
+          console.warn(`  -> Skipped: Missing title (URL: ${event.url})`)
+          continue
+        }
+        if (!event.startDatetime) {
+          console.warn(`  -> Skipped: Missing startDatetime ("${event.title}")`)
+          continue
+        }
+        if (!event.sourceEventId) {
+          console.warn(`  -> Skipped: Missing sourceEventId ("${event.title}")`)
+          continue
+        }
 
         const categoryId = event.categorySlug ? catMap.get(event.categorySlug) : undefined
 
@@ -103,8 +116,8 @@ export async function runAllScrapers() {
 
           if (result.length > 0) eventsInserted++
           else eventsUpdated++
-        } catch {
-          // Skip individual failures
+        } catch (err) {
+          console.error(`  -> DB Insert Error for "${event.title}":`, err)
         }
       }
     } catch (err) {
@@ -132,8 +145,6 @@ export async function runAllScrapers() {
       }
     }
 
-    console.log(
-      `[scrapers] ${scraper.name}: done. inserted=${eventsInserted}, updated=${eventsUpdated}${errorMessage ? `, error=${errorMessage}` : ''}`
-    )
+    console.log(`[scrapers] ${scraper.name}: done. inserted=${eventsInserted}, updated=${eventsUpdated}${errorMessage ? `, error=${errorMessage}` : ''}`)
   }
 }
