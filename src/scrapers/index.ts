@@ -8,12 +8,16 @@ import { illiniUnionScraper } from './illini-union'
 import { cityOfChampaignScraper } from './city-of-champaign'
 import { visitChampaignCountyScraper } from './visitchampaigncounty'
 import { universityOfIlloisScraper } from './university-of-illinois'
+import { experienceCuScraper } from './experiencecu'
+import { smilePolitelyScraper } from './smilepolitely'
 
 const SCRAPERS = [
   illiniUnionScraper,
   cityOfChampaignScraper,
   visitChampaignCountyScraper,
   universityOfIlloisScraper,
+  experienceCuScraper,
+  smilePolitelyScraper,
 ]
 
 function getDb() {

@@ -14,24 +14,78 @@ interface Props {
   categories: Category[]
 }
 
+type QuickRange = 'today' | 'tomorrow' | 'this-week' | 'this-weekend' | 'next-week'
+
+function getQuickDateRange(type: QuickRange): { start: string; end: string } {
+  const now = new Date()
+  now.setHours(0, 0, 0, 0)
+
+  const fmt = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const fmtEnd = (d: Date) => fmt(d) + ' 23:59'
+
+  const addDays = (d: Date, n: number) => {
+    const r = new Date(d)
+    r.setDate(r.getDate() + n)
+    return r
+  }
+
+  switch (type) {
+    case 'today':
+      return { start: fmt(now), end: fmtEnd(now) }
+    case 'tomorrow': {
+      const t = addDays(now, 1)
+      return { start: fmt(t), end: fmtEnd(t) }
+    }
+    case 'this-week': {
+      const endOfWeek = addDays(now, 6 - now.getDay())
+      return { start: fmt(now), end: fmtEnd(endOfWeek) }
+    }
+    case 'this-weekend': {
+      const day = now.getDay()
+      const daysToSat = day === 6 ? 0 : day === 0 ? 6 : 6 - day
+      const sat = addDays(now, daysToSat)
+      const sun = addDays(sat, 1)
+      return { start: fmt(sat), end: fmtEnd(sun) }
+    }
+    case 'next-week': {
+      const daysToMon = now.getDay() === 0 ? 1 : 8 - now.getDay()
+      const mon = addDays(now, daysToMon)
+      const sun = addDays(mon, 6)
+      return { start: fmt(mon), end: fmtEnd(sun) }
+    }
+  }
+}
+
+const QUICK_RANGES: { label: string; value: QuickRange }[] = [
+  { label: 'Today', value: 'today' },
+  { label: 'Tomorrow', value: 'tomorrow' },
+  { label: 'This Week', value: 'this-week' },
+  { label: 'This Weekend', value: 'this-weekend' },
+  { label: 'Next Week', value: 'next-week' },
+]
+
 export default function EventFilters({ categories }: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
-  const setParam = useCallback(
-    (key: string, value: string) => {
+  const setParams = useCallback(
+    (updates: Record<string, string>) => {
       const params = new URLSearchParams(searchParams.toString())
-      if (value) {
-        params.set(key, value)
-      } else {
-        params.delete(key)
+      for (const [key, value] of Object.entries(updates)) {
+        if (value) params.set(key, value)
+        else params.delete(key)
       }
-      // Reset page when filters change
       params.delete('page')
       router.push(`${pathname}?${params.toString()}`)
     },
     [router, pathname, searchParams]
+  )
+
+  const setParam = useCallback(
+    (key: string, value: string) => setParams({ [key]: value }),
+    [setParams]
   )
 
   const category = searchParams.get('category') || ''
@@ -39,14 +93,30 @@ export default function EventFilters({ categories }: Props) {
   const start = searchParams.get('start') || ''
   const end = searchParams.get('end') || ''
 
+  const activeQuick =
+    QUICK_RANGES.find((r) => {
+      const range = getQuickDateRange(r.value)
+      return range.start === start && range.end === end
+    })?.value ?? null
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
       {/* Search */}
       <div>
         <label className="block text-xs font-medium text-gray-600 mb-1">Search</label>
         <div className="relative">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          <svg
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
           </svg>
           <input
             type="text"
@@ -75,25 +145,53 @@ export default function EventFilters({ categories }: Props) {
         </select>
       </div>
 
-      {/* Date range */}
-      <div className="grid grid-cols-2 gap-2">
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">From</label>
-          <input
-            type="date"
-            value={start}
-            onChange={(e) => setParam('start', e.target.value)}
-            className="w-full py-2 px-3 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-          />
+      {/* Quick date buttons */}
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-2">Date</label>
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {QUICK_RANGES.map((r) => (
+            <button
+              key={r.value}
+              onClick={() => {
+                if (activeQuick === r.value) {
+                  setParams({ start: '', end: '' })
+                } else {
+                  setParams(getQuickDateRange(r.value))
+                }
+              }}
+              className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${
+                activeQuick === r.value
+                  ? 'bg-orange-600 text-white border-orange-600'
+                  : 'bg-white text-gray-600 border-gray-200 hover:border-orange-400 hover:text-orange-600'
+              }`}
+            >
+              {r.label}
+            </button>
+          ))}
         </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">To</label>
-          <input
-            type="date"
-            value={end}
-            onChange={(e) => setParam('end', e.target.value ? e.target.value + ' 23:59' : '')}
-            className="w-full py-2 px-3 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-          />
+
+        {/* Custom date range */}
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">From</label>
+            <input
+              type="date"
+              value={start.slice(0, 10)}
+              onChange={(e) => setParam('start', e.target.value)}
+              className="w-full py-2 px-3 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">To</label>
+            <input
+              type="date"
+              value={end.slice(0, 10)}
+              onChange={(e) =>
+                setParam('end', e.target.value ? e.target.value + ' 23:59' : '')
+              }
+              className="w-full py-2 px-3 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
+          </div>
         </div>
       </div>
 
