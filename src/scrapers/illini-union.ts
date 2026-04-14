@@ -2,7 +2,7 @@ import * as cheerio from 'cheerio'
 import type { Scraper, ScrapedEvent } from './base'
 import { fetchCached, truncateText, parseDate } from './fetch-utils'
 
-const BASE_URL = 'https://union.illinois.edu'
+const BASE_URL = 'https://calendars.illinois.edu/rss/4063'
 
 export const illiniUnionScraper: Scraper = {
   name: 'illini-union',
