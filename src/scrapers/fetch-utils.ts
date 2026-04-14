@@ -1,73 +1,6 @@
 import fs from 'fs'
 import path from 'path'
 
-interface CacheEntry {
-  etag?: string
-  lastModified?: string
-}
-
-const CACHE_FILE = path.join(process.cwd(), '.scraper-cache.json')
-let _cache: Record<string, CacheEntry> | null = null
-
-function loadCache(): Record<string, CacheEntry> {
-  if (_cache) return _cache
-  try {
-    _cache = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf-8'))
-  } catch {
-    _cache = {}
-  }
-  return _cache!
-}
-
-function saveCache(cache: Record<string, CacheEntry>) {
-  try {
-    fs.writeFileSync(CACHE_FILE, JSON.stringify(cache, null, 2))
-  } catch {}
-}
-
-/**
- * Fetch a URL using HTTP conditional requests (ETag / If-Modified-Since).
- *
- * Returns null if the server responds 304 Not Modified – the content has not
- * changed since the last scrape, so parsing can be skipped entirely. ETags and
- * Last-Modified values are persisted to disk (.scraper-cache.json) so they
- * survive between scraper runs and save bandwidth.
- */
-export async function fetchCached(
-  url: string,
-  extraHeaders: Record<string, string> = {}
-): Promise<Response | null> {
-  const cache = loadCache()
-  const entry = cache[url] ?? {}
-
-  const headers: Record<string, string> = {
-    'User-Agent': 'CU-Events/1.0 (cu-events.com)',
-    ...extraHeaders,
-  }
-  if (entry.etag) headers['If-None-Match'] = entry.etag
-  if (entry.lastModified) headers['If-Modified-Since'] = entry.lastModified
-
-  const res = await fetch(url, { headers, signal: AbortSignal.timeout(15000) })
-
-  if (res.status === 304) {
-    console.log(`[fetch-cache] ${url} → 304 Not Modified, skipping`)
-    return null
-  }
-
-  // Persist any caching headers the server sent back
-  const etag = res.headers.get('etag')
-  const lastModified = res.headers.get('last-modified')
-  if (etag || lastModified) {
-    cache[url] = {
-      ...(etag ? { etag } : {}),
-      ...(lastModified ? { lastModified } : {}),
-    }
-    saveCache(cache)
-  }
-
-  return res
-}
-
 /** Strip HTML tags and collapse whitespace. */
 export function stripHtml(html: string): string {
   return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
@@ -87,11 +20,59 @@ export function truncateText(text: string, maxLen = 500): string {
 /** Parse an arbitrary date/time string to 'YYYY-MM-DD HH:MM:SS'. Returns null if invalid. */
 export function parseDate(text: string | undefined | null): string | null {
   if (!text?.trim()) return null
+  
+  let cleanText = text.trim().replace(/\s+/g, ' ');
+  
+  // Try standard JS parsing first
+  let d = new Date(cleanText);
+  if (!isNaN(d.getTime())) return formatDbDate(d);
+
+  // Remove ordinals like "th", "nd", "st", "rd" from days (e.g., May 12th -> May 12)
+  cleanText = cleanText.replace(/(\d+)(st|nd|rd|th)/g, '$1');
+  d = new Date(cleanText);
+  if (!isNaN(d.getTime())) return formatDbDate(d);
+
+  // Try splitting by hyphen or 'to' (e.g. "May 12 - May 14") and parse the first date
+  const parts = cleanText.split(/[-–—]| to /i);
+  if (parts.length > 1) {
+    d = new Date(parts[0].trim());
+    if (!isNaN(d.getTime())) return formatDbDate(d);
+  }
+
+  // Log exactly what string is failing so you can fix it later
+  console.warn(`[parseDate] Could not parse date format: "${text}"`);
+  return null;
+}
+
+function formatDbDate(d: Date): string {
+  return d.toISOString().replace('T', ' ').slice(0, 19);
+}
+
+/**
+ * Fetch a URL. The 304 Not Modified file cache was removed because it was 
+ * hiding events and preventing scraper code updates from running properly.
+ */
+export async function fetchCached(
+  url: string,
+  extraHeaders: Record<string, string> = {}
+): Promise<Response | null> {
+  const headers: Record<string, string> = {
+    // Use a standard browser User-Agent so sites don't block the request
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.5',
+    ...extraHeaders,
+  }
+
   try {
-    const d = new Date(text.trim())
-    if (isNaN(d.getTime())) return null
-    return d.toISOString().replace('T', ' ').slice(0, 19)
-  } catch {
-    return null
+    const res = await fetch(url, { headers, signal: AbortSignal.timeout(15000) })
+    
+    if (!res.ok) {
+      console.warn(`[fetch] Failed to fetch ${url} - HTTP Status: ${res.status}`);
+    }
+    return res;
+  } catch (err) {
+    console.error(`[fetch] Network error fetching ${url}:`, err);
+    return null;
   }
 }
