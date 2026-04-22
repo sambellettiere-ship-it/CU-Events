@@ -21,8 +21,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               <Link href="/admin/events" className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-purple-50 transition-colors">
                 Manage Events
               </Link>
-              <Link href="/admin/scrapers" className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-purple-50 transition-colors">
-                Scrapers
+              <Link href="/admin/businesses" className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-purple-50 transition-colors">
+                Businesses
+              </Link>
+              <Link href="/admin/sales" className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-purple-50 transition-colors">
+                Sales
               </Link>
               <Link href="/dashboard" className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors mt-4 border-t border-gray-100 pt-4">
                 ← Back to Dashboard
