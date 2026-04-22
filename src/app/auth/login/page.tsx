@@ -2,10 +2,10 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 
 export default function LoginPage() {
-  const router = useRouter()
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -26,8 +26,8 @@ export default function LoginPage() {
         setError(data.error || 'Login failed')
         return
       }
-      router.push('/dashboard')
-      router.refresh()
+      const from = searchParams.get('from')
+      window.location.href = from || '/dashboard'
     } catch {
       setError('Network error. Please try again.')
     } finally {
@@ -45,8 +45,8 @@ export default function LoginPage() {
             </div>
             <span className="font-bold text-lg">CU Events</span>
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900">Business Login</h1>
-          <p className="text-gray-500 mt-1 text-sm">Sign in to manage your events</p>
+          <h1 className="text-2xl font-bold text-gray-900">Sign In</h1>
+          <p className="text-gray-500 mt-1 text-sm">Sign in to your account</p>
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
