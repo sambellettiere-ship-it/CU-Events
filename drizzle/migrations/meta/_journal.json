@@ -15,6 +15,13 @@
       "when": 1776282632000,
       "tag": "0001_add_users_and_itinerary",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1776369032000,
+      "tag": "0002_recurring_itinerary_sales",
+      "breakpoints": true
     }
   ]
 }

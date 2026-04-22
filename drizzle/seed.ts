@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
-import { categories, businesses, users, events } from './schema'
+import { categories, businesses } from './schema'
 import bcrypt from 'bcryptjs'
 import path from 'path'
 
@@ -9,9 +9,8 @@ const DB_PATH = process.env.DATABASE_URL || path.join(process.cwd(), 'cu-events.
 const sqlite = new Database(DB_PATH)
 sqlite.pragma('journal_mode = WAL')
 sqlite.pragma('foreign_keys = ON')
-const db = drizzle(sqlite, { schema: { categories, businesses, users, events } })
+const db = drizzle(sqlite, { schema: { categories, businesses } })
 
-// Run migrations first
 migrate(db as Parameters<typeof migrate>[0], { migrationsFolder: './drizzle/migrations' })
 
 async function seed() {
@@ -34,7 +33,7 @@ async function seed() {
     .returning()
   console.log(`Inserted ${cats.length} categories`)
 
-  console.log('Seeding admin user...')
+  console.log('Seeding admin account...')
   const adminPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD || 'admin123', 10)
   const [admin] = await db
     .insert(businesses)
@@ -49,228 +48,8 @@ async function seed() {
     .returning()
   console.log('Admin:', admin?.email || 'already exists')
 
-  console.log('Seeding demo business...')
-  const demoPassword = await bcrypt.hash('demo123', 10)
-  const [demoBusiness] = await db
-    .insert(businesses)
-    .values({
-      name: 'Krannert Center for the Performing Arts',
-      email: 'demo@krannert.illinois.edu',
-      passwordHash: demoPassword,
-      website: 'https://krannertcenter.com',
-      phone: '(217) 333-6280',
-      description: 'Premier performing arts center at the University of Illinois.',
-      isVerified: 1,
-    })
-    .onConflictDoNothing()
-    .returning()
-
-  console.log('Seeding demo community user...')
-  const userPassword = await bcrypt.hash('user123', 10)
-  await db
-    .insert(users)
-    .values({
-      name: 'Alex Community',
-      email: 'user@example.com',
-      passwordHash: userPassword,
-    })
-    .onConflictDoNothing()
-
-  // Get category IDs
-  const allCats = await db.select().from(categories)
-  const getCatId = (slug: string) => allCats.find(c => c.slug === slug)?.id ?? 1
-
-  console.log('Seeding sample events...')
-  const now = new Date()
-  const sampleEvents = [
-    {
-      title: 'Illini Jazz Festival',
-      description: 'Annual jazz festival featuring UIUC jazz ensembles and special guest artists. A celebration of jazz tradition and innovation in the heart of campus.',
-      shortDescription: 'Annual jazz festival featuring UIUC jazz ensembles and special guest artists.',
-      startDatetime: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19),
-      endDatetime: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19),
-      locationName: 'Krannert Center for the Performing Arts',
-      address: '500 S Goodwin Ave',
-      city: 'Urbana',
-      latitude: 40.1053,
-      longitude: -88.2244,
-      price: '$15 – $25',
-      categoryId: getCatId('music'),
-      businessId: demoBusiness?.id,
-      source: 'business',
-      sourceEventId: `business-jazz-${Date.now()}`,
-      isApproved: 1,
-      isFeatured: 1,
-      featuredUntil: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19),
-    },
-    {
-      title: 'Champaign Farmers Market',
-      description: "Shop local produce, baked goods, crafts, and more at Champaign's beloved weekly farmers market. Rain or shine!",
-      shortDescription: 'Weekly farmers market with local produce, baked goods, and crafts.',
-      startDatetime: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19),
-      endDatetime: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19),
-      locationName: 'Lincoln Square Mall',
-      address: '201 N Neil St',
-      city: 'Champaign',
-      latitude: 40.1164,
-      longitude: -88.2434,
-      price: 'Free',
-      categoryId: getCatId('food-drink'),
-      source: 'user',
-      sourceEventId: `user-farmers-market-${Date.now()}`,
-      isApproved: 1,
-    },
-    {
-      title: 'Boneyard Arts Festival',
-      description: 'A weekend-long celebration of art, music, and community in downtown Champaign. Features visual art, live performances, and interactive installations.',
-      shortDescription: 'Weekend-long celebration of art, music, and community in downtown Champaign.',
-      startDatetime: new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19),
-      endDatetime: new Date(now.getTime() + 6 * 24 * 60 * 60 * 1000 + 8 * 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19),
-      locationName: 'Downtown Champaign',
-      address: '44 E Main St',
-      city: 'Champaign',
-      latitude: 40.1164,
-      longitude: -88.2434,
-      price: 'Free',
-      categoryId: getCatId('arts-culture'),
-      source: 'user',
-      sourceEventId: `user-boneyard-${Date.now() + 1}`,
-      isApproved: 1,
-    },
-    {
-      title: 'Illinois Marathon',
-      description: 'Join thousands of runners in the annual Illinois Marathon and Half Marathon. The course takes you through the beautiful University of Illinois campus.',
-      shortDescription: 'Annual marathon and half marathon through the University of Illinois campus.',
-      startDatetime: new Date(now.getTime() + 8 * 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19),
-      locationName: 'Memorial Stadium',
-      address: '1402 S First St',
-      city: 'Champaign',
-      latitude: 40.0978,
-      longitude: -88.2357,
-      price: '$60 – $100',
-      categoryId: getCatId('sports-fitness'),
-      source: 'user',
-      sourceEventId: `user-marathon-${Date.now() + 2}`,
-      isApproved: 1,
-    },
-    {
-      title: 'Tech Talk: AI in Healthcare',
-      description: 'UIUC CS department hosts a panel discussion on the applications of artificial intelligence in modern healthcare. Open to all.',
-      shortDescription: 'Panel discussion on AI applications in modern healthcare.',
-      startDatetime: new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19),
-      endDatetime: new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19),
-      locationName: 'Siebel Center for Computer Science',
-      address: '201 N Goodwin Ave',
-      city: 'Urbana',
-      latitude: 40.1138,
-      longitude: -88.2249,
-      price: 'Free',
-      categoryId: getCatId('tech'),
-      source: 'user',
-      sourceEventId: `user-ai-talk-${Date.now() + 3}`,
-      isApproved: 1,
-    },
-    {
-      title: 'Taste of Champaign-Urbana',
-      description: 'Annual food festival showcasing the best local restaurants, food trucks, and artisan food producers in the CU area.',
-      shortDescription: 'Annual food festival showcasing the best local restaurants and food trucks.',
-      startDatetime: new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19),
-      endDatetime: new Date(now.getTime() + 11 * 24 * 60 * 60 * 1000 + 6 * 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19),
-      locationName: 'West Side Park',
-      address: 'W University Ave & N Randolph St',
-      city: 'Champaign',
-      latitude: 40.1172,
-      longitude: -88.2527,
-      price: 'Free admission',
-      categoryId: getCatId('food-drink'),
-      source: 'user',
-      sourceEventId: `user-taste-cu-${Date.now() + 4}`,
-      isApproved: 1,
-    },
-    {
-      title: 'Illini vs. Michigan Basketball',
-      description: "Don't miss this Big Ten matchup as the Illinois Fighting Illini take on the Michigan Wolverines at State Farm Center.",
-      shortDescription: 'Big Ten basketball: Illinois Fighting Illini vs. Michigan Wolverines.',
-      startDatetime: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19),
-      locationName: 'State Farm Center',
-      address: '1800 S First St',
-      city: 'Champaign',
-      latitude: 40.0957,
-      longitude: -88.2343,
-      price: '$25 – $75',
-      categoryId: getCatId('sports-fitness'),
-      source: 'business',
-      sourceEventId: `business-basketball-${Date.now() + 5}`,
-      businessId: demoBusiness?.id,
-      isApproved: 1,
-    },
-    {
-      title: 'Outdoor Movie Night: Classics Under the Stars',
-      description: 'Bring a blanket and enjoy a classic film screened outdoors at West Side Park. Free popcorn while supplies last!',
-      shortDescription: 'Free outdoor movie screening at West Side Park with popcorn.',
-      startDatetime: new Date(now.getTime() + 6 * 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19),
-      locationName: 'West Side Park',
-      address: 'W University Ave & N Randolph St',
-      city: 'Champaign',
-      latitude: 40.1172,
-      longitude: -88.2527,
-      price: 'Free',
-      categoryId: getCatId('community'),
-      source: 'user',
-      sourceEventId: `user-movie-night-${Date.now() + 6}`,
-      isApproved: 1,
-    },
-    {
-      title: 'Allerton Park Garden Tour',
-      description: 'Guided tours through the spectacular formal gardens at Allerton Park, featuring Chinese maze garden, sculptures, and seasonal blooms.',
-      shortDescription: "Guided tours through Allerton Park's spectacular formal gardens and sculptures.",
-      startDatetime: new Date(now.getTime() + 9 * 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19),
-      endDatetime: new Date(now.getTime() + 9 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19),
-      locationName: 'Allerton Park & Retreat Center',
-      address: '515 Old Timber Rd',
-      city: 'Monticello',
-      latitude: 39.9833,
-      longitude: -88.5556,
-      price: '$8',
-      categoryId: getCatId('outdoors'),
-      source: 'user',
-      sourceEventId: `user-allerton-${Date.now() + 7}`,
-      isApproved: 1,
-    },
-    {
-      title: 'Craft Beer Festival',
-      description: 'Sample craft beers from over 30 regional and local breweries at this popular annual festival in downtown Champaign.',
-      shortDescription: 'Sample craft beers from 30+ regional breweries in downtown Champaign.',
-      startDatetime: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19),
-      endDatetime: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000 + 5 * 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19),
-      locationName: 'Downtown Champaign',
-      address: '44 E Main St',
-      city: 'Champaign',
-      latitude: 40.1164,
-      longitude: -88.2434,
-      price: '$35',
-      categoryId: getCatId('nightlife'),
-      source: 'user',
-      sourceEventId: `user-beer-fest-${Date.now() + 8}`,
-      isApproved: 1,
-    },
-  ]
-
-  let inserted = 0
-  for (const event of sampleEvents) {
-    try {
-      await db.insert(events).values(event).onConflictDoNothing()
-      inserted++
-    } catch (e) {
-      console.error('Failed to insert event:', event.title, e)
-    }
-  }
-  console.log(`Inserted ${inserted} sample events`)
   console.log('\nSeed complete!')
-  console.log('\nLogin credentials:')
-  console.log('  Admin (business account): admin@cu-events.com / admin123')
-  console.log('  Demo business: demo@krannert.illinois.edu / demo123')
-  console.log('  Demo user: user@example.com / user123')
+  console.log('\nAdmin login: admin@cu-events.com / admin123')
 }
 
 seed()

@@ -11,7 +11,6 @@ function groupByDate(items: ItineraryEvent[]): Record<string, ItineraryEvent[]> 
     if (!groups[date]) groups[date] = []
     groups[date].push(item)
   }
-  // Sort events within each day by start time
   for (const date of Object.keys(groups)) {
     groups[date].sort((a, b) => a.startDatetime.localeCompare(b.startDatetime))
   }
@@ -34,7 +33,6 @@ function TimelineEvent({ event, onRemove }: { event: ItineraryEvent; onRemove: (
 
   return (
     <div className="flex gap-4 group">
-      {/* Time column */}
       <div className="w-16 flex-shrink-0 text-right pt-0.5">
         <p className="text-sm font-semibold text-gray-700">{formatTime(event.startDatetime)}</p>
         {event.endDatetime && (
@@ -42,13 +40,11 @@ function TimelineEvent({ event, onRemove }: { event: ItineraryEvent; onRemove: (
         )}
       </div>
 
-      {/* Line + dot */}
       <div className="flex flex-col items-center">
-        <div className="w-3 h-3 rounded-full bg-indigo-500 mt-1 flex-shrink-0 ring-2 ring-white" />
+        <div className="w-3 h-3 rounded-full bg-kf-aqua mt-1 flex-shrink-0 ring-2 ring-white" />
         <div className="w-0.5 bg-gray-200 flex-1 mt-1" />
       </div>
 
-      {/* Event card */}
       <div className="flex-1 pb-6">
         <div
           className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-sm transition-shadow"
@@ -56,7 +52,7 @@ function TimelineEvent({ event, onRemove }: { event: ItineraryEvent; onRemove: (
         >
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <Link href={`/events/${event.id}`} className="font-semibold text-gray-900 hover:text-indigo-600 transition-colors line-clamp-1">
+              <Link href={`/events/${event.id}`} className="font-semibold text-gray-900 hover:text-kf-teal transition-colors line-clamp-1">
                 {event.title}
               </Link>
               {event.locationName && (
@@ -74,7 +70,7 @@ function TimelineEvent({ event, onRemove }: { event: ItineraryEvent; onRemove: (
                 {event.categoryName && (
                   <span
                     className="px-1.5 py-0.5 rounded-full text-white font-medium"
-                    style={{ backgroundColor: event.categoryColor || '#6366f1' }}
+                    style={{ backgroundColor: event.categoryColor || '#0d8c94' }}
                   >
                     {event.categoryName}
                   </span>
@@ -98,7 +94,41 @@ function TimelineEvent({ event, onRemove }: { event: ItineraryEvent; onRemove: (
 }
 
 export default function ItineraryPage() {
-  const { items, removeEvent, clearAll, count } = useItinerary()
+  const { items, removeEvent, clearAll, count, isAuthenticated, isLoading } = useItinerary()
+
+  if (isLoading) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-16 text-center">
+        <div className="text-4xl mb-3 animate-pulse">🗓️</div>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-16 text-center">
+        <div className="text-6xl mb-4">🗓️</div>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Sign In to Use Your Itinerary</h1>
+        <p className="text-gray-500 mb-8 max-w-md mx-auto">
+          Create a free account to save events to your personal itinerary and plan your day in Champaign-Urbana.
+        </p>
+        <div className="flex gap-3 justify-center">
+          <Link
+            href="/auth/login?from=/itinerary"
+            className="bg-kf-orange hover:bg-kf-rust text-white font-semibold px-6 py-3 rounded-xl transition-colors inline-block"
+          >
+            Sign In
+          </Link>
+          <Link
+            href="/auth/register/user?from=/itinerary"
+            className="border border-gray-200 hover:border-kf-aqua text-gray-700 font-semibold px-6 py-3 rounded-xl transition-colors inline-block"
+          >
+            Create Free Account
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   const grouped = groupByDate(items)
   const dates = Object.keys(grouped).sort()
@@ -109,11 +139,11 @@ export default function ItineraryPage() {
         <div className="text-6xl mb-4">🗓️</div>
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Your Itinerary is Empty</h1>
         <p className="text-gray-500 mb-8 max-w-md mx-auto">
-          Browse events and click the <strong>+</strong> button on any event card to add it to your day plan. Your itinerary is saved in your browser.
+          Browse events and click the <strong>+</strong> button on any event card to add it to your day plan.
         </p>
         <Link
           href="/events"
-          className="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-6 py-3 rounded-xl transition-colors inline-block"
+          className="bg-kf-orange hover:bg-kf-rust text-white font-semibold px-6 py-3 rounded-xl transition-colors inline-block"
         >
           Browse Events
         </Link>
@@ -123,17 +153,13 @@ export default function ItineraryPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">My Itinerary</h1>
           <p className="text-sm text-gray-500 mt-0.5">{count} event{count !== 1 ? 's' : ''} planned</p>
         </div>
         <div className="flex items-center gap-3">
-          <Link
-            href="/events"
-            className="text-sm text-orange-600 hover:underline font-medium"
-          >
+          <Link href="/events" className="text-sm text-kf-teal hover:underline font-medium">
             + Add more events
           </Link>
           <button
@@ -145,7 +171,6 @@ export default function ItineraryPage() {
         </div>
       </div>
 
-      {/* Timeline by date */}
       <div className="space-y-8">
         {dates.map((date) => {
           const dayEvents = grouped[date]
@@ -159,7 +184,7 @@ export default function ItineraryPage() {
           return (
             <section key={date}>
               <div className="flex items-center gap-3 mb-4">
-                <div className="bg-indigo-600 text-white rounded-lg px-3 py-1 text-sm font-semibold">
+                <div className="bg-kf-aqua text-white rounded-lg px-3 py-1 text-sm font-semibold">
                   {dayLabel}
                 </div>
                 <div className="flex-1 h-px bg-gray-200" />
@@ -178,7 +203,6 @@ export default function ItineraryPage() {
         })}
       </div>
 
-      {/* Share / Print */}
       <div className="mt-8 flex gap-3 pt-6 border-t border-gray-100">
         <button
           onClick={() => window.print()}
