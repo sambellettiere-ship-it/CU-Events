@@ -45,10 +45,14 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-orange-600 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">CU</span>
-            </div>
-            <span className="font-bold text-lg text-gray-900">CU Events</span>
+            <img
+              src="/kingfishing.svg"
+              alt="CU Events"
+              width={28}
+              height={36}
+              className="object-contain"
+            />
+            <span className="font-bold text-lg text-kf-deep">CU Events</span>
           </Link>
 
           {/* Desktop nav */}
@@ -59,8 +63,8 @@ export default function Navbar() {
                 href={link.href}
                 className={`text-sm font-medium transition-colors ${
                   pathname?.startsWith(link.href)
-                    ? 'text-orange-600'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'text-kf-teal'
+                    : 'text-gray-600 hover:text-kf-deep'
                 }`}
               >
                 {link.label}
@@ -69,7 +73,7 @@ export default function Navbar() {
             <Link
               href="/submit"
               className={`text-sm font-medium transition-colors ${
-                pathname === '/submit' ? 'text-orange-600' : 'text-gray-600 hover:text-gray-900'
+                pathname === '/submit' ? 'text-kf-teal' : 'text-gray-600 hover:text-kf-deep'
               }`}
             >
               Submit Event
@@ -77,12 +81,12 @@ export default function Navbar() {
             <Link
               href="/itinerary"
               className={`relative text-sm font-medium transition-colors ${
-                pathname === '/itinerary' ? 'text-indigo-600' : 'text-gray-600 hover:text-gray-900'
+                pathname === '/itinerary' ? 'text-kf-aqua' : 'text-gray-600 hover:text-kf-deep'
               }`}
             >
               My Itinerary
               {itineraryCount > 0 && (
-                <span className="absolute -top-1.5 -right-3 bg-indigo-600 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                <span className="absolute -top-1.5 -right-3 bg-kf-aqua text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
                   {itineraryCount > 9 ? '9+' : itineraryCount}
                 </span>
               )}
@@ -96,14 +100,14 @@ export default function Navbar() {
                 {user.role === 'admin' && (
                   <Link
                     href="/admin"
-                    className="text-sm text-gray-600 hover:text-gray-900 font-medium"
+                    className="text-sm text-gray-600 hover:text-kf-deep font-medium"
                   >
                     Admin
                   </Link>
                 )}
                 <Link
                   href="/dashboard"
-                  className="text-sm font-medium text-gray-700 hover:text-gray-900"
+                  className="text-sm font-medium text-gray-700 hover:text-kf-deep"
                 >
                   Dashboard
                 </Link>
@@ -118,19 +122,19 @@ export default function Navbar() {
               <>
                 <Link
                   href="/auth/login"
-                  className="text-sm font-medium text-gray-600 hover:text-gray-900"
+                  className="text-sm font-medium text-gray-600 hover:text-kf-deep"
                 >
                   Login
                 </Link>
                 <Link
                   href="/auth/register"
-                  className="bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                  className="bg-kf-orange hover:bg-kf-rust text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
                 >
                   Sign Up
                 </Link>
                 <Link
                   href="/auth/register/business"
-                  className="border border-gray-200 hover:border-orange-200 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                  className="border border-gray-200 hover:border-kf-sky text-gray-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
                 >
                   List Your Business
                 </Link>
@@ -191,7 +195,7 @@ export default function Navbar() {
             ) : (
               <>
                 <Link href="/auth/login" className="block px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg" onClick={() => setMenuOpen(false)}>Login</Link>
-                <Link href="/auth/register" className="block px-3 py-2 text-sm font-medium text-orange-600 hover:bg-orange-50 rounded-lg" onClick={() => setMenuOpen(false)}>Sign Up</Link>
+                <Link href="/auth/register" className="block px-3 py-2 text-sm font-medium text-kf-orange hover:bg-kf-cream rounded-lg" onClick={() => setMenuOpen(false)}>Sign Up</Link>
                 <Link href="/auth/register/business" className="block px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg" onClick={() => setMenuOpen(false)}>Register Business</Link>
               </>
             )}

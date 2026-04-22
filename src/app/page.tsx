@@ -81,19 +81,30 @@ export default async function HomePage() {
   return (
     <div>
       {/* Hero */}
-      <section className="bg-gradient-to-br from-blue-900 via-blue-800 to-orange-700 text-white py-20 px-4">
-        <div className="max-w-4xl mx-auto text-center">
+      <section className="relative bg-gradient-to-br from-kf-deep via-kf-teal to-kf-orange text-white py-20 px-4 overflow-hidden">
+        {/* Decorative kingfisher silhouette */}
+        <div className="absolute right-0 top-0 h-full w-64 opacity-10 pointer-events-none select-none flex items-center justify-end pr-4">
+          <img
+            src="/kingfishing.svg"
+            alt=""
+            width={200}
+            height={250}
+            className="object-contain brightness-[100] invert"
+            aria-hidden="true"
+          />
+        </div>
+        <div className="max-w-4xl mx-auto text-center relative">
           <h1 className="text-4xl md:text-6xl font-bold mb-4 leading-tight">
             What&apos;s Happening in<br />
-            <span className="text-orange-300">Champaign-Urbana</span>
+            <span className="text-kf-sand">Champaign-Urbana</span>
           </h1>
-          <p className="text-lg md:text-xl text-blue-100 mb-8 max-w-xl mx-auto">
+          <p className="text-lg md:text-xl text-kf-sky mb-8 max-w-xl mx-auto">
             Community-powered events calendar for the CU area — concerts, festivals, sports, food, and more.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center flex-wrap">
             <Link
               href="/events"
-              className="bg-orange-500 hover:bg-orange-400 text-white font-semibold px-8 py-3 rounded-xl transition-colors text-lg"
+              className="bg-kf-orange hover:bg-kf-rust text-white font-semibold px-8 py-3 rounded-xl transition-colors text-lg"
             >
               Browse Events
             </Link>
@@ -119,7 +130,7 @@ export default async function HomePage() {
           <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
             <Link
               href="/events"
-              className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full border border-gray-200 hover:border-orange-300 hover:bg-orange-50 text-sm font-medium text-gray-700 transition-colors"
+              className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full border border-gray-200 hover:border-kf-aqua hover:bg-kf-cream text-sm font-medium text-gray-700 transition-colors"
             >
               All Events
             </Link>
@@ -127,7 +138,7 @@ export default async function HomePage() {
               <Link
                 key={cat.id}
                 href={`/events?category=${cat.slug}`}
-                className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full border border-gray-200 hover:border-orange-300 hover:bg-orange-50 text-sm font-medium text-gray-700 transition-colors"
+                className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full border border-gray-200 hover:border-kf-aqua hover:bg-kf-cream text-sm font-medium text-gray-700 transition-colors"
               >
                 <span>{CATEGORY_ICONS[cat.slug] || '📅'}</span>
                 {cat.name}
@@ -146,7 +157,7 @@ export default async function HomePage() {
                 <h2 className="text-xl font-bold text-gray-900">Featured Events</h2>
                 <p className="text-sm text-gray-500">Promoted by local businesses</p>
               </div>
-              <Link href="/events?featured=true" className="text-sm text-orange-600 hover:underline font-medium">
+              <Link href="/events?featured=true" className="text-sm text-kf-teal hover:underline font-medium">
                 See all →
               </Link>
             </div>
@@ -162,7 +173,7 @@ export default async function HomePage() {
         <section>
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-xl font-bold text-gray-900">Upcoming Events</h2>
-            <Link href="/events" className="text-sm text-orange-600 hover:underline font-medium">
+            <Link href="/events" className="text-sm text-kf-teal hover:underline font-medium">
               View all →
             </Link>
           </div>
@@ -176,7 +187,7 @@ export default async function HomePage() {
             <div className="text-center py-16 text-gray-400">
               <p className="text-4xl mb-3">📅</p>
               <p>No upcoming events yet. Be the first to submit one!</p>
-              <Link href="/submit" className="mt-4 inline-block text-orange-600 hover:underline font-medium text-sm">
+              <Link href="/submit" className="mt-4 inline-block text-kf-teal hover:underline font-medium text-sm">
                 Submit an event →
               </Link>
             </div>
@@ -206,13 +217,13 @@ export default async function HomePage() {
           <div className="flex gap-3 justify-center mt-8 flex-wrap">
             <Link
               href="/auth/register/user"
-              className="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
+              className="bg-kf-orange hover:bg-kf-rust text-white font-semibold px-6 py-3 rounded-xl transition-colors"
             >
               Create Free Account
             </Link>
             <Link
               href="/submit"
-              className="bg-white border border-gray-200 hover:border-orange-200 text-gray-700 font-semibold px-6 py-3 rounded-xl transition-colors"
+              className="bg-white border border-gray-200 hover:border-kf-aqua text-gray-700 font-semibold px-6 py-3 rounded-xl transition-colors"
             >
               Submit an Event
             </Link>
@@ -220,15 +231,15 @@ export default async function HomePage() {
         </section>
 
         {/* Business CTA */}
-        <section className="bg-gradient-to-r from-blue-900 to-blue-800 rounded-2xl p-8 text-white text-center">
+        <section className="bg-gradient-to-r from-kf-deep to-kf-teal rounded-2xl p-8 text-white text-center">
           <h2 className="text-2xl font-bold mb-2">Host events in Champaign-Urbana?</h2>
-          <p className="text-blue-200 mb-6">
+          <p className="text-kf-sky mb-6">
             Register your business to manage events, reach thousands of locals, and boost visibility with sponsored listings.
           </p>
           <div className="flex gap-3 justify-center flex-wrap">
             <Link
               href="/auth/register/business"
-              className="bg-orange-500 hover:bg-orange-400 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
+              className="bg-kf-orange hover:bg-kf-rust text-white font-semibold px-6 py-3 rounded-xl transition-colors"
             >
               Register Your Business
             </Link>

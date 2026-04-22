@@ -32,7 +32,7 @@ export default function EventCard({ event, compact = false }: EventCardProps) {
   return (
     <div className="group relative">
       <Link href={`/events/${event.id}`} className="block">
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md hover:border-orange-200 transition-all duration-200">
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md hover:border-kf-sky transition-all duration-200">
           {/* Image */}
           {!compact && event.imageUrl && (
             <div className="relative h-44 overflow-hidden bg-gray-100">
@@ -42,7 +42,7 @@ export default function EventCard({ event, compact = false }: EventCardProps) {
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
               {event.isFeatured ? (
-                <div className="absolute top-2 left-2 bg-orange-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                <div className="absolute top-2 left-2 bg-kf-orange text-white text-xs font-semibold px-2 py-0.5 rounded-full">
                   Sponsored
                 </div>
               ) : null}
@@ -55,20 +55,20 @@ export default function EventCard({ event, compact = false }: EventCardProps) {
               {event.categoryName && (
                 <span
                   className="text-xs font-medium px-2 py-0.5 rounded-full text-white"
-                  style={{ backgroundColor: event.categoryColor || '#6366f1' }}
+                  style={{ backgroundColor: event.categoryColor || '#0d8c94' }}
                 >
                   {event.categoryName}
                 </span>
               )}
               {event.isFeatured && !event.imageUrl && (
-                <span className="text-xs font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200">
+                <span className="text-xs font-semibold text-kf-orange bg-kf-cream px-2 py-0.5 rounded-full border border-kf-sand">
                   Sponsored
                 </span>
               )}
             </div>
 
             {/* Title */}
-            <h3 className="font-semibold text-gray-900 group-hover:text-orange-600 transition-colors line-clamp-2 leading-snug mb-1">
+            <h3 className="font-semibold text-gray-900 group-hover:text-kf-teal transition-colors line-clamp-2 leading-snug mb-1">
               {event.title}
             </h3>
 
