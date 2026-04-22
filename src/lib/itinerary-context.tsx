@@ -22,52 +22,90 @@ interface ItineraryContextValue {
   hasEvent: (id: number) => boolean
   clearAll: () => void
   count: number
+  isAuthenticated: boolean
+  isLoading: boolean
 }
 
 const ItineraryContext = createContext<ItineraryContextValue | null>(null)
 
-const STORAGE_KEY = 'cu-events-itinerary'
-
 export function ItineraryProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ItineraryEvent[]>([])
-  const [hydrated, setHydrated] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored) setItems(JSON.parse(stored))
-    } catch {}
-    setHydrated(true)
+    async function init() {
+      try {
+        const res = await fetch('/api/auth/me')
+        const data = await res.json()
+        if (data.user && data.user.accountType === 'user') {
+          setIsAuthenticated(true)
+          const itinRes = await fetch('/api/itinerary')
+          if (itinRes.ok) {
+            const itinData = await itinRes.json()
+            setItems(itinData.items || [])
+          }
+        }
+      } catch {}
+      setIsLoading(false)
+    }
+    init()
   }, [])
 
-  useEffect(() => {
-    if (!hydrated) return
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
-    } catch {}
-  }, [items, hydrated])
+  const addEvent = useCallback(
+    (event: ItineraryEvent) => {
+      if (!isAuthenticated) return
+      if (items.some((e) => e.id === event.id)) return
+      setItems((prev) => [...prev, event])
+      fetch('/api/itinerary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventId: event.id }),
+      }).catch(() => {
+        setItems((prev) => prev.filter((e) => e.id !== event.id))
+      })
+    },
+    [isAuthenticated, items]
+  )
 
-  const addEvent = useCallback((event: ItineraryEvent) => {
-    setItems((prev) => {
-      if (prev.some((e) => e.id === event.id)) return prev
-      return [...prev, event]
-    })
-  }, [])
-
-  const removeEvent = useCallback((id: number) => {
-    setItems((prev) => prev.filter((e) => e.id !== id))
-  }, [])
+  const removeEvent = useCallback(
+    (id: number) => {
+      if (!isAuthenticated) return
+      setItems((prev) => prev.filter((e) => e.id !== id))
+      fetch(`/api/itinerary/${id}`, { method: 'DELETE' }).catch(async () => {
+        const res = await fetch('/api/itinerary')
+        if (res.ok) setItems((await res.json()).items || [])
+      })
+    },
+    [isAuthenticated]
+  )
 
   const hasEvent = useCallback(
     (id: number) => items.some((e) => e.id === id),
     [items]
   )
 
-  const clearAll = useCallback(() => setItems([]), [])
+  const clearAll = useCallback(() => {
+    if (!isAuthenticated) return
+    setItems([])
+    fetch('/api/itinerary', { method: 'DELETE' }).catch(async () => {
+      const res = await fetch('/api/itinerary')
+      if (res.ok) setItems((await res.json()).items || [])
+    })
+  }, [isAuthenticated])
 
   return (
     <ItineraryContext.Provider
-      value={{ items, addEvent, removeEvent, hasEvent, clearAll, count: items.length }}
+      value={{
+        items,
+        addEvent,
+        removeEvent,
+        hasEvent,
+        clearAll,
+        count: items.length,
+        isAuthenticated,
+        isLoading,
+      }}
     >
       {children}
     </ItineraryContext.Provider>

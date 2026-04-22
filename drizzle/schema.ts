@@ -73,6 +73,11 @@ export const events = sqliteTable(
     isFeatured: integer('is_featured').default(0),
     featuredUntil: text('featured_until'),
     viewCount: integer('view_count').default(0),
+    // Recurring event fields
+    isRecurring: integer('is_recurring').notNull().default(0),
+    recurrenceType: text('recurrence_type'), // 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly'
+    recurrenceEndDate: text('recurrence_end_date'),
+    recurrenceDaysOfWeek: text('recurrence_days_of_week'), // JSON: '["Mon","Wed"]'
     createdAt: text('created_at')
       .notNull()
       .default(sql`(datetime('now'))`),
@@ -108,6 +113,47 @@ export const sponsoredListings = sqliteTable('sponsored_listings', {
     .default(sql`(datetime('now'))`),
 })
 
+export const itineraryItems = sqliteTable(
+  'itinerary_items',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    eventId: integer('event_id')
+      .notNull()
+      .references(() => events.id, { onDelete: 'cascade' }),
+    addedAt: text('added_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (table) => [
+    uniqueIndex('itinerary_user_event_idx').on(table.userId, table.eventId),
+  ]
+)
+
+export const sales = sqliteTable('sales', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  title: text('title').notNull(),
+  type: text('type').notNull().default('garage'), // 'garage' | 'estate' | 'yard' | 'moving' | 'church'
+  description: text('description'),
+  address: text('address').notNull(),
+  city: text('city').notNull().default('Champaign'),
+  startDatetime: text('start_datetime').notNull(),
+  endDatetime: text('end_datetime'),
+  latitude: real('latitude'),
+  longitude: real('longitude'),
+  contactName: text('contact_name'),
+  contactEmail: text('contact_email'),
+  contactPhone: text('contact_phone'),
+  imageUrl: text('image_url'),
+  isApproved: integer('is_approved').notNull().default(1),
+  submittedByUserId: integer('submitted_by_user_id').references(() => users.id),
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(datetime('now'))`),
+})
+
 export type User = typeof users.$inferSelect
 export type NewUser = typeof users.$inferInsert
 export type Business = typeof businesses.$inferSelect
@@ -116,3 +162,6 @@ export type Category = typeof categories.$inferSelect
 export type Event = typeof events.$inferSelect
 export type NewEvent = typeof events.$inferInsert
 export type SponsoredListing = typeof sponsoredListings.$inferSelect
+export type ItineraryItem = typeof itineraryItems.$inferSelect
+export type Sale = typeof sales.$inferSelect
+export type NewSale = typeof sales.$inferInsert

@@ -22,6 +22,10 @@ interface EventFormData {
   ticketUrl: string
   url: string
   categoryId: number | ''
+  isRecurring: boolean
+  recurrenceType: string
+  recurrenceEndDate: string
+  recurrenceDaysOfWeek: string[]
 }
 
 interface Props {
@@ -30,6 +34,8 @@ interface Props {
   mode: 'create' | 'edit'
   redirectTo?: string
 }
+
+const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 export default function EventForm({ initialData, eventId, mode, redirectTo = '/dashboard' }: Props) {
   const router = useRouter()
@@ -47,6 +53,10 @@ export default function EventForm({ initialData, eventId, mode, redirectTo = '/d
     ticketUrl: '',
     url: '',
     categoryId: '',
+    isRecurring: false,
+    recurrenceType: 'weekly',
+    recurrenceEndDate: '',
+    recurrenceDaysOfWeek: [],
     ...initialData,
   })
   const [error, setError] = useState('')
@@ -59,22 +69,31 @@ export default function EventForm({ initialData, eventId, mode, redirectTo = '/d
       .then((d) => setCategories(d.categories || []))
   }, [])
 
-  function setField(field: keyof EventFormData, value: string | number) {
+  function setField<K extends keyof EventFormData>(field: K, value: EventFormData[K]) {
     setForm((prev) => ({ ...prev, [field]: value }))
+  }
+
+  function toggleDay(day: string) {
+    setForm((prev) => {
+      const days = prev.recurrenceDaysOfWeek
+      return {
+        ...prev,
+        recurrenceDaysOfWeek: days.includes(day)
+          ? days.filter((d) => d !== day)
+          : [...days, day],
+      }
+    })
   }
 
   async function geocodeAddress() {
     if (!form.address) return
     setGeocoding(true)
     try {
-      const res = await fetch('/api/geocode', {
+      await fetch('/api/geocode', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ address: `${form.address}, ${form.city || 'Champaign'}, IL` }),
       })
-      if (res.ok) {
-        // Geocode succeeded - coordinates are stored server-side on submit
-      }
     } finally {
       setGeocoding(false)
     }
@@ -93,6 +112,12 @@ export default function EventForm({ initialData, eventId, mode, redirectTo = '/d
         url: form.url || undefined,
         imageUrl: form.imageUrl || undefined,
         ticketUrl: form.ticketUrl || undefined,
+        recurrenceType: form.isRecurring ? form.recurrenceType : undefined,
+        recurrenceEndDate: form.isRecurring && form.recurrenceEndDate ? form.recurrenceEndDate : undefined,
+        recurrenceDaysOfWeek:
+          form.isRecurring && ['weekly', 'biweekly'].includes(form.recurrenceType)
+            ? JSON.stringify(form.recurrenceDaysOfWeek)
+            : undefined,
       }
 
       const url = mode === 'edit' ? `/api/events/${eventId}` : '/api/events'
@@ -110,7 +135,6 @@ export default function EventForm({ initialData, eventId, mode, redirectTo = '/d
         return
       }
 
-      // Try to geocode in background after saving
       if (form.address) {
         fetch('/api/geocode', {
           method: 'POST',
@@ -142,6 +166,9 @@ export default function EventForm({ initialData, eventId, mode, redirectTo = '/d
     }
   }
 
+  const inputClass =
+    'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-kf-teal'
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
@@ -162,7 +189,7 @@ export default function EventForm({ initialData, eventId, mode, redirectTo = '/d
             required
             value={form.title}
             onChange={(e) => setField('title', e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className={inputClass}
             placeholder="Give your event a clear, descriptive title"
           />
         </div>
@@ -173,7 +200,7 @@ export default function EventForm({ initialData, eventId, mode, redirectTo = '/d
             rows={5}
             value={form.description}
             onChange={(e) => setField('description', e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
+            className={`${inputClass} resize-none`}
             placeholder="Tell people what your event is about…"
           />
         </div>
@@ -183,7 +210,7 @@ export default function EventForm({ initialData, eventId, mode, redirectTo = '/d
           <select
             value={form.categoryId}
             onChange={(e) => setField('categoryId', e.target.value ? Number(e.target.value) : '')}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"
+            className={`${inputClass} bg-white`}
           >
             <option value="">Select a category</option>
             {categories.map((cat) => (
@@ -208,7 +235,7 @@ export default function EventForm({ initialData, eventId, mode, redirectTo = '/d
               required
               value={form.startDatetime}
               onChange={(e) => setField('startDatetime', e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className={inputClass}
             />
           </div>
           <div>
@@ -217,10 +244,81 @@ export default function EventForm({ initialData, eventId, mode, redirectTo = '/d
               type="datetime-local"
               value={form.endDatetime}
               onChange={(e) => setField('endDatetime', e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className={inputClass}
             />
           </div>
         </div>
+
+        {/* Recurring toggle */}
+        <div className="flex items-center gap-3 pt-1">
+          <button
+            type="button"
+            onClick={() => setField('isRecurring', !form.isRecurring)}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              form.isRecurring ? 'bg-kf-teal' : 'bg-gray-200'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                form.isRecurring ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+          <label className="text-sm font-medium text-gray-700">Recurring event</label>
+        </div>
+
+        {form.isRecurring && (
+          <div className="bg-kf-cream/60 rounded-lg p-4 space-y-4 border border-kf-sand/40">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Repeats</label>
+              <select
+                value={form.recurrenceType}
+                onChange={(e) => setField('recurrenceType', e.target.value)}
+                className={`${inputClass} bg-white`}
+              >
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="biweekly">Biweekly (every 2 weeks)</option>
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </div>
+
+            {['weekly', 'biweekly'].includes(form.recurrenceType) && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">On these days</label>
+                <div className="flex gap-2 flex-wrap">
+                  {DAYS_OF_WEEK.map((day) => (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => toggleDay(day)}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
+                        form.recurrenceDaysOfWeek.includes(day)
+                          ? 'bg-kf-teal border-kf-teal text-white'
+                          : 'bg-white border-gray-300 text-gray-700 hover:border-kf-teal'
+                      }`}
+                    >
+                      {day}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                End date <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <input
+                type="date"
+                value={form.recurrenceEndDate}
+                onChange={(e) => setField('recurrenceEndDate', e.target.value)}
+                className={inputClass}
+              />
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Location */}
@@ -232,7 +330,7 @@ export default function EventForm({ initialData, eventId, mode, redirectTo = '/d
             type="text"
             value={form.locationName}
             onChange={(e) => setField('locationName', e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className={inputClass}
             placeholder="e.g. Krannert Center, Lincoln Square Mall"
           />
         </div>
@@ -243,7 +341,7 @@ export default function EventForm({ initialData, eventId, mode, redirectTo = '/d
             value={form.address}
             onChange={(e) => setField('address', e.target.value)}
             onBlur={geocodeAddress}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className={inputClass}
             placeholder="123 Main St"
           />
           {geocoding && <p className="text-xs text-gray-400 mt-1">Looking up location…</p>}
@@ -253,7 +351,7 @@ export default function EventForm({ initialData, eventId, mode, redirectTo = '/d
           <select
             value={form.city}
             onChange={(e) => setField('city', e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"
+            className={`${inputClass} bg-white`}
           >
             <option>Champaign</option>
             <option>Urbana</option>
@@ -275,7 +373,7 @@ export default function EventForm({ initialData, eventId, mode, redirectTo = '/d
             type="text"
             value={form.price}
             onChange={(e) => setField('price', e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className={inputClass}
             placeholder='e.g. "Free", "$10", "$10–$25"'
           />
         </div>
@@ -285,7 +383,7 @@ export default function EventForm({ initialData, eventId, mode, redirectTo = '/d
             type="url"
             value={form.ticketUrl}
             onChange={(e) => setField('ticketUrl', e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className={inputClass}
             placeholder="https://tickets.example.com"
           />
         </div>
@@ -295,7 +393,7 @@ export default function EventForm({ initialData, eventId, mode, redirectTo = '/d
             type="url"
             value={form.url}
             onChange={(e) => setField('url', e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className={inputClass}
             placeholder="https://yourevent.com"
           />
         </div>
@@ -305,7 +403,7 @@ export default function EventForm({ initialData, eventId, mode, redirectTo = '/d
             type="url"
             value={form.imageUrl}
             onChange={(e) => setField('imageUrl', e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className={inputClass}
             placeholder="https://yourimage.com/event.jpg"
           />
         </div>
@@ -315,7 +413,7 @@ export default function EventForm({ initialData, eventId, mode, redirectTo = '/d
         <button
           type="submit"
           disabled={loading}
-          className="bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-semibold px-6 py-2.5 rounded-xl transition-colors"
+          className="bg-kf-orange hover:bg-kf-rust disabled:opacity-50 text-white font-semibold px-6 py-2.5 rounded-xl transition-colors"
         >
           {loading ? 'Saving…' : mode === 'create' ? 'Create Event' : 'Save Changes'}
         </button>

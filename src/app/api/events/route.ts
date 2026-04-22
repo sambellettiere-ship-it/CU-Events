@@ -21,6 +21,10 @@ const createEventSchema = z.object({
   ticketUrl: z.string().url().optional().or(z.literal('')),
   price: z.string().optional(),
   categoryId: z.number().optional(),
+  isRecurring: z.boolean().optional(),
+  recurrenceType: z.enum(['daily', 'weekly', 'biweekly', 'monthly', 'yearly']).optional(),
+  recurrenceEndDate: z.string().optional(),
+  recurrenceDaysOfWeek: z.string().optional(), // JSON string
 })
 
 export async function GET(request: NextRequest) {
@@ -85,6 +89,8 @@ export async function GET(request: NextRequest) {
       imageUrl: events.imageUrl,
       price: events.price,
       isFeatured: events.isFeatured,
+      isRecurring: events.isRecurring,
+      recurrenceType: events.recurrenceType,
       source: events.source,
       categoryId: events.categoryId,
       categoryName: categories.name,
@@ -135,6 +141,10 @@ export async function POST(request: NextRequest) {
       ...data,
       shortDescription: shortDesc,
       allDay: data.allDay ? 1 : 0,
+      isRecurring: data.isRecurring ? 1 : 0,
+      recurrenceType: data.isRecurring ? (data.recurrenceType ?? null) : null,
+      recurrenceEndDate: data.isRecurring ? (data.recurrenceEndDate ?? null) : null,
+      recurrenceDaysOfWeek: data.isRecurring ? (data.recurrenceDaysOfWeek ?? null) : null,
       businessId: isBusiness ? session.businessId! : null,
       submittedByUserId: isBusiness ? null : session.id,
       source: isBusiness ? 'business' : 'user',
@@ -144,7 +154,7 @@ export async function POST(request: NextRequest) {
       url: data.url || null,
       imageUrl: data.imageUrl || null,
       ticketUrl: data.ticketUrl || null,
-      isApproved: 0, // all submissions require admin approval
+      isApproved: 0,
     })
     .returning()
 
