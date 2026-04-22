@@ -28,9 +28,10 @@ interface Props {
   initialData?: Partial<EventFormData>
   eventId?: number
   mode: 'create' | 'edit'
+  redirectTo?: string
 }
 
-export default function EventForm({ initialData, eventId, mode }: Props) {
+export default function EventForm({ initialData, eventId, mode, redirectTo = '/dashboard' }: Props) {
   const router = useRouter()
   const [categories, setCategories] = useState<Category[]>([])
   const [form, setForm] = useState<EventFormData>({
@@ -132,7 +133,7 @@ export default function EventForm({ initialData, eventId, mode }: Props) {
           .catch(() => {})
       }
 
-      router.push('/dashboard')
+      router.push(redirectTo)
       router.refresh()
     } catch {
       setError('Network error. Please try again.')

@@ -127,18 +127,24 @@ export async function POST(request: NextRequest) {
     ? data.description.slice(0, 160).trim()
     : undefined
 
+  const isBusiness = session.accountType === 'business'
+
   const [event] = await db
     .insert(events)
     .values({
       ...data,
       shortDescription: shortDesc,
       allDay: data.allDay ? 1 : 0,
-      businessId: session.businessId,
-      source: 'business',
-      sourceEventId: `business-${session.businessId}-${Date.now()}`,
+      businessId: isBusiness ? session.businessId! : null,
+      submittedByUserId: isBusiness ? null : session.id,
+      source: isBusiness ? 'business' : 'user',
+      sourceEventId: isBusiness
+        ? `business-${session.businessId!}-${Date.now()}`
+        : `user-${session.id}-${Date.now()}`,
       url: data.url || null,
       imageUrl: data.imageUrl || null,
       ticketUrl: data.ticketUrl || null,
+      isApproved: 0, // all submissions require admin approval
     })
     .returning()
 

@@ -5,6 +5,7 @@ import { events, categories, businesses } from '../../../../drizzle/schema'
 import { eq, and } from 'drizzle-orm'
 import { formatDateRange } from '@/lib/utils'
 import MiniMapClient from '@/components/map/MiniMapClient'
+import ItineraryButton from '@/components/itinerary/ItineraryButton'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -195,6 +196,21 @@ export default async function EventDetailPage({
                 Get Tickets
               </a>
             )}
+            <ItineraryButton
+              event={{
+                id: event.id,
+                title: event.title,
+                startDatetime: event.startDatetime,
+                endDatetime: event.endDatetime,
+                locationName: event.locationName,
+                address: event.address,
+                city: event.city,
+                price: event.price,
+                categoryName: event.categoryName,
+                categoryColor: event.categoryColor,
+              }}
+              variant="full"
+            />
             <a
               href={gcalUrl}
               target="_blank"

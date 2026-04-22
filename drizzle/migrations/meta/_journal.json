@@ -8,6 +8,13 @@
       "when": 1776196232542,
       "tag": "0000_ambitious_bucky",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1776282632000,
+      "tag": "0001_add_users_and_itinerary",
+      "breakpoints": true
     }
   ]
 }
