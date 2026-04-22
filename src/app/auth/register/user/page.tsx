@@ -2,10 +2,8 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 
 export default function UserRegisterPage() {
-  const router = useRouter()
   const [form, setForm] = useState({ name: '', email: '', password: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -37,10 +35,9 @@ export default function UserRegisterPage() {
         body: JSON.stringify({ email: form.email, password: form.password }),
       })
       if (loginRes.ok) {
-        router.push('/dashboard')
-        router.refresh()
+        window.location.href = '/'
       } else {
-        router.push('/auth/login')
+        window.location.href = '/auth/login'
       }
     } catch {
       setError('Network error. Please try again.')
