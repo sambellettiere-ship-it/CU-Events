@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { businesses } from '../../../../../drizzle/schema'
+import { businesses, users } from '../../../../../drizzle/schema'
 import { eq } from 'drizzle-orm'
 import bcrypt from 'bcryptjs'
 import { createToken, SessionUser } from '@/lib/auth'
@@ -26,41 +26,74 @@ export async function POST(request: NextRequest) {
 
   const { email, password } = parsed.data
 
+  // Check businesses table first
   const [business] = await db
     .select()
     .from(businesses)
     .where(eq(businesses.email, email))
 
-  if (!business) {
+  if (business) {
+    const valid = await bcrypt.compare(password, business.passwordHash)
+    if (!valid) {
+      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
+    }
+
+    const sessionUser: SessionUser = {
+      id: business.id,
+      email: business.email,
+      name: business.name,
+      role: business.role || 'business',
+      accountType: 'business',
+      businessId: business.id,
+    }
+
+    const token = await createToken(sessionUser)
+    const response = NextResponse.json({
+      user: { id: business.id, name: business.name, email: business.email, role: business.role, accountType: 'business' },
+    })
+    response.cookies.set('cu-session', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 30,
+      path: '/',
+    })
+    return response
+  }
+
+  // Check users table
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, email))
+
+  if (!user) {
     return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
   }
 
-  const valid = await bcrypt.compare(password, business.passwordHash)
+  const valid = await bcrypt.compare(password, user.passwordHash)
   if (!valid) {
     return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
   }
 
   const sessionUser: SessionUser = {
-    id: business.id,
-    email: business.email,
-    name: business.name,
-    role: business.role || 'business',
-    businessId: business.id,
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role || 'user',
+    accountType: 'user',
   }
 
   const token = await createToken(sessionUser)
-
   const response = NextResponse.json({
-    user: { id: business.id, name: business.name, email: business.email, role: business.role },
+    user: { id: user.id, name: user.name, email: user.email, role: user.role, accountType: 'user' },
   })
-
   response.cookies.set('cu-session', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 30, // 30 days
+    maxAge: 60 * 60 * 24 * 30,
     path: '/',
   })
-
   return response
 }

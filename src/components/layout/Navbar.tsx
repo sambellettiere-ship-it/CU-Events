@@ -3,12 +3,14 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
+import { useItinerary } from '@/lib/itinerary-context'
 
 interface User {
   id: number
   name: string
   email: string
   role: string
+  accountType?: string
 }
 
 export default function Navbar() {
@@ -16,6 +18,7 @@ export default function Navbar() {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
+  const { count: itineraryCount } = useItinerary()
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -63,6 +66,27 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
+            <Link
+              href="/submit"
+              className={`text-sm font-medium transition-colors ${
+                pathname === '/submit' ? 'text-orange-600' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Submit Event
+            </Link>
+            <Link
+              href="/itinerary"
+              className={`relative text-sm font-medium transition-colors ${
+                pathname === '/itinerary' ? 'text-indigo-600' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              My Itinerary
+              {itineraryCount > 0 && (
+                <span className="absolute -top-1.5 -right-3 bg-indigo-600 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                  {itineraryCount > 9 ? '9+' : itineraryCount}
+                </span>
+              )}
+            </Link>
           </div>
 
           {/* Auth area */}
@@ -96,13 +120,19 @@ export default function Navbar() {
                   href="/auth/login"
                   className="text-sm font-medium text-gray-600 hover:text-gray-900"
                 >
-                  Business Login
+                  Login
                 </Link>
                 <Link
                   href="/auth/register"
                   className="bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
                 >
-                  List Your Events
+                  Sign Up
+                </Link>
+                <Link
+                  href="/auth/register/business"
+                  className="border border-gray-200 hover:border-orange-200 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                >
+                  List Your Business
                 </Link>
               </>
             )}
@@ -136,15 +166,33 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
+            <Link
+              href="/submit"
+              className="block px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg"
+              onClick={() => setMenuOpen(false)}
+            >
+              Submit Event
+            </Link>
+            <Link
+              href="/itinerary"
+              className="block px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg"
+              onClick={() => setMenuOpen(false)}
+            >
+              My Itinerary {itineraryCount > 0 ? `(${itineraryCount})` : ''}
+            </Link>
             {user ? (
               <>
+                {user.role === 'admin' && (
+                  <Link href="/admin" className="block px-3 py-2 text-sm font-medium text-purple-700 hover:bg-purple-50 rounded-lg" onClick={() => setMenuOpen(false)}>Admin Panel</Link>
+                )}
                 <Link href="/dashboard" className="block px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg" onClick={() => setMenuOpen(false)}>Dashboard</Link>
                 <button onClick={() => { handleLogout(); setMenuOpen(false) }} className="block w-full text-left px-3 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 rounded-lg">Logout</button>
               </>
             ) : (
               <>
-                <Link href="/auth/login" className="block px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg" onClick={() => setMenuOpen(false)}>Business Login</Link>
-                <Link href="/auth/register" className="block px-3 py-2 text-sm font-medium text-orange-600 hover:bg-orange-50 rounded-lg" onClick={() => setMenuOpen(false)}>List Your Events</Link>
+                <Link href="/auth/login" className="block px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg" onClick={() => setMenuOpen(false)}>Login</Link>
+                <Link href="/auth/register" className="block px-3 py-2 text-sm font-medium text-orange-600 hover:bg-orange-50 rounded-lg" onClick={() => setMenuOpen(false)}>Sign Up</Link>
+                <Link href="/auth/register/business" className="block px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg" onClick={() => setMenuOpen(false)}>Register Business</Link>
               </>
             )}
           </div>

@@ -95,9 +95,12 @@ export async function PUT(
   const [existing] = await db.select().from(events).where(eq(events.id, eventId))
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const isOwner = existing.businessId === session.businessId
   const isAdmin = session.role === 'admin'
-  if (!isOwner && !isAdmin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const isBusinessOwner = session.accountType === 'business' && existing.businessId === session.businessId
+  const isUserOwner = session.accountType === 'user' && existing.submittedByUserId === session.id
+  if (!isAdmin && !isBusinessOwner && !isUserOwner) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   const body = await request.json()
   const parsed = updateSchema.safeParse(body)
@@ -105,8 +108,13 @@ export async function PUT(
 
   const data = parsed.data
   const shortDesc = data.description ? data.description.slice(0, 160).trim() : undefined
-  // Convert allDay boolean to integer for SQLite
   const { allDay, ...restData } = data
+
+  // Non-admins cannot change approval/featured status
+  if (!isAdmin) {
+    delete restData.isApproved
+    delete restData.isFeatured
+  }
 
   const [updated] = await db
     .update(events)
@@ -136,9 +144,12 @@ export async function DELETE(
   const [existing] = await db.select().from(events).where(eq(events.id, eventId))
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const isOwner = existing.businessId === session.businessId
   const isAdmin = session.role === 'admin'
-  if (!isOwner && !isAdmin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const isBusinessOwner = session.accountType === 'business' && existing.businessId === session.businessId
+  const isUserOwner = session.accountType === 'user' && existing.submittedByUserId === session.id
+  if (!isAdmin && !isBusinessOwner && !isUserOwner) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   await db.delete(events).where(eq(events.id, eventId))
   return NextResponse.json({ success: true })

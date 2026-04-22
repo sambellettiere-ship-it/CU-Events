@@ -12,7 +12,9 @@ async function getFeaturedEvents() {
       title: events.title,
       shortDescription: events.shortDescription,
       startDatetime: events.startDatetime,
+      endDatetime: events.endDatetime,
       locationName: events.locationName,
+      address: events.address,
       city: events.city,
       price: events.price,
       imageUrl: events.imageUrl,
@@ -35,7 +37,9 @@ async function getUpcomingEvents() {
       title: events.title,
       shortDescription: events.shortDescription,
       startDatetime: events.startDatetime,
+      endDatetime: events.endDatetime,
       locationName: events.locationName,
+      address: events.address,
       city: events.city,
       price: events.price,
       imageUrl: events.imageUrl,
@@ -84,9 +88,9 @@ export default async function HomePage() {
             <span className="text-orange-300">Champaign-Urbana</span>
           </h1>
           <p className="text-lg md:text-xl text-blue-100 mb-8 max-w-xl mx-auto">
-            Your master calendar for CU area events — concerts, festivals, sports, food, and more.
+            Community-powered events calendar for the CU area — concerts, festivals, sports, food, and more.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center flex-wrap">
             <Link
               href="/events"
               className="bg-orange-500 hover:bg-orange-400 text-white font-semibold px-8 py-3 rounded-xl transition-colors text-lg"
@@ -94,10 +98,16 @@ export default async function HomePage() {
               Browse Events
             </Link>
             <Link
-              href="/map"
+              href="/submit"
               className="bg-white/10 hover:bg-white/20 text-white font-semibold px-8 py-3 rounded-xl border border-white/30 transition-colors text-lg"
             >
-              View Map
+              Submit an Event
+            </Link>
+            <Link
+              href="/itinerary"
+              className="bg-white/10 hover:bg-white/20 text-white font-semibold px-8 py-3 rounded-xl border border-white/30 transition-colors text-lg"
+            >
+              Plan Your Day
             </Link>
           </div>
         </div>
@@ -165,20 +175,59 @@ export default async function HomePage() {
           ) : (
             <div className="text-center py-16 text-gray-400">
               <p className="text-4xl mb-3">📅</p>
-              <p>No upcoming events yet.</p>
+              <p>No upcoming events yet. Be the first to submit one!</p>
+              <Link href="/submit" className="mt-4 inline-block text-orange-600 hover:underline font-medium text-sm">
+                Submit an event →
+              </Link>
             </div>
           )}
+        </section>
+
+        {/* How it works */}
+        <section className="bg-white rounded-2xl border border-gray-200 p-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-6 text-center">How CU Events Works</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div className="text-center">
+              <div className="text-4xl mb-3">📝</div>
+              <h3 className="font-semibold text-gray-900 mb-1">Submit</h3>
+              <p className="text-sm text-gray-500">Anyone can submit events happening in the CU area. Free accounts for community members.</p>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl mb-3">✅</div>
+              <h3 className="font-semibold text-gray-900 mb-1">Review</h3>
+              <p className="text-sm text-gray-500">Our team reviews each submission to keep the calendar accurate and spam-free.</p>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl mb-3">🗓️</div>
+              <h3 className="font-semibold text-gray-900 mb-1">Discover</h3>
+              <p className="text-sm text-gray-500">Browse events, add them to your personal itinerary, and plan your perfect day.</p>
+            </div>
+          </div>
+          <div className="flex gap-3 justify-center mt-8 flex-wrap">
+            <Link
+              href="/auth/register/user"
+              className="bg-orange-600 hover:bg-orange-700 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
+            >
+              Create Free Account
+            </Link>
+            <Link
+              href="/submit"
+              className="bg-white border border-gray-200 hover:border-orange-200 text-gray-700 font-semibold px-6 py-3 rounded-xl transition-colors"
+            >
+              Submit an Event
+            </Link>
+          </div>
         </section>
 
         {/* Business CTA */}
         <section className="bg-gradient-to-r from-blue-900 to-blue-800 rounded-2xl p-8 text-white text-center">
           <h2 className="text-2xl font-bold mb-2">Host events in Champaign-Urbana?</h2>
           <p className="text-blue-200 mb-6">
-            Register your business to post events, reach thousands of locals, and boost visibility with sponsored listings.
+            Register your business to manage events, reach thousands of locals, and boost visibility with sponsored listings.
           </p>
           <div className="flex gap-3 justify-center flex-wrap">
             <Link
-              href="/auth/register"
+              href="/auth/register/business"
               className="bg-orange-500 hover:bg-orange-400 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
             >
               Register Your Business
@@ -187,7 +236,7 @@ export default async function HomePage() {
               href="/dashboard/billing"
               className="bg-white/10 hover:bg-white/20 border border-white/30 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
             >
-              Learn About Sponsored Listings
+              Sponsored Listings
             </Link>
           </div>
         </section>

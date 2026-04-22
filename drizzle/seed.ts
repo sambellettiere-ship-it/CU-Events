@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
-import { categories, businesses, events } from './schema'
+import { categories, businesses, users, events } from './schema'
 import bcrypt from 'bcryptjs'
 import path from 'path'
 
@@ -9,7 +9,7 @@ const DB_PATH = process.env.DATABASE_URL || path.join(process.cwd(), 'cu-events.
 const sqlite = new Database(DB_PATH)
 sqlite.pragma('journal_mode = WAL')
 sqlite.pragma('foreign_keys = ON')
-const db = drizzle(sqlite, { schema: { categories, businesses, events } })
+const db = drizzle(sqlite, { schema: { categories, businesses, users, events } })
 
 // Run migrations first
 migrate(db as Parameters<typeof migrate>[0], { migrationsFolder: './drizzle/migrations' })
@@ -65,6 +65,17 @@ async function seed() {
     .onConflictDoNothing()
     .returning()
 
+  console.log('Seeding demo community user...')
+  const userPassword = await bcrypt.hash('user123', 10)
+  await db
+    .insert(users)
+    .values({
+      name: 'Alex Community',
+      email: 'user@example.com',
+      passwordHash: userPassword,
+    })
+    .onConflictDoNothing()
+
   // Get category IDs
   const allCats = await db.select().from(categories)
   const getCatId = (slug: string) => allCats.find(c => c.slug === slug)?.id ?? 1
@@ -88,6 +99,7 @@ async function seed() {
       businessId: demoBusiness?.id,
       source: 'business',
       sourceEventId: `business-jazz-${Date.now()}`,
+      isApproved: 1,
       isFeatured: 1,
       featuredUntil: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19),
     },
@@ -104,8 +116,9 @@ async function seed() {
       longitude: -88.2434,
       price: 'Free',
       categoryId: getCatId('food-drink'),
-      source: 'city-champaign',
-      sourceEventId: 'farmers-market-weekly',
+      source: 'user',
+      sourceEventId: `user-farmers-market-${Date.now()}`,
+      isApproved: 1,
     },
     {
       title: 'Boneyard Arts Festival',
@@ -120,8 +133,9 @@ async function seed() {
       longitude: -88.2434,
       price: 'Free',
       categoryId: getCatId('arts-culture'),
-      source: 'visitchampaigncounty',
-      sourceEventId: 'boneyard-arts-2026',
+      source: 'user',
+      sourceEventId: `user-boneyard-${Date.now() + 1}`,
+      isApproved: 1,
     },
     {
       title: 'Illinois Marathon',
@@ -135,8 +149,9 @@ async function seed() {
       longitude: -88.2357,
       price: '$60 – $100',
       categoryId: getCatId('sports-fitness'),
-      source: 'illini-union',
-      sourceEventId: 'illinois-marathon-2026',
+      source: 'user',
+      sourceEventId: `user-marathon-${Date.now() + 2}`,
+      isApproved: 1,
     },
     {
       title: 'Tech Talk: AI in Healthcare',
@@ -151,8 +166,9 @@ async function seed() {
       longitude: -88.2249,
       price: 'Free',
       categoryId: getCatId('tech'),
-      source: 'university-of-illinois',
-      sourceEventId: 'ai-healthcare-panel-2026',
+      source: 'user',
+      sourceEventId: `user-ai-talk-${Date.now() + 3}`,
+      isApproved: 1,
     },
     {
       title: 'Taste of Champaign-Urbana',
@@ -167,8 +183,9 @@ async function seed() {
       longitude: -88.2527,
       price: 'Free admission',
       categoryId: getCatId('food-drink'),
-      source: 'visitchampaigncounty',
-      sourceEventId: 'taste-cu-2026',
+      source: 'user',
+      sourceEventId: `user-taste-cu-${Date.now() + 4}`,
+      isApproved: 1,
     },
     {
       title: 'Illini vs. Michigan Basketball',
@@ -182,8 +199,10 @@ async function seed() {
       longitude: -88.2343,
       price: '$25 – $75',
       categoryId: getCatId('sports-fitness'),
-      source: 'illini-union',
-      sourceEventId: 'illini-basketball-michigan-2026',
+      source: 'business',
+      sourceEventId: `business-basketball-${Date.now() + 5}`,
+      businessId: demoBusiness?.id,
+      isApproved: 1,
     },
     {
       title: 'Outdoor Movie Night: Classics Under the Stars',
@@ -197,13 +216,14 @@ async function seed() {
       longitude: -88.2527,
       price: 'Free',
       categoryId: getCatId('community'),
-      source: 'city-champaign',
-      sourceEventId: 'outdoor-movie-summer-2026',
+      source: 'user',
+      sourceEventId: `user-movie-night-${Date.now() + 6}`,
+      isApproved: 1,
     },
     {
       title: 'Allerton Park Garden Tour',
       description: 'Guided tours through the spectacular formal gardens at Allerton Park, featuring Chinese maze garden, sculptures, and seasonal blooms.',
-      shortDescription: 'Guided tours through Allerton Park\'s spectacular formal gardens and sculptures.',
+      shortDescription: "Guided tours through Allerton Park's spectacular formal gardens and sculptures.",
       startDatetime: new Date(now.getTime() + 9 * 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19),
       endDatetime: new Date(now.getTime() + 9 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19),
       locationName: 'Allerton Park & Retreat Center',
@@ -213,8 +233,9 @@ async function seed() {
       longitude: -88.5556,
       price: '$8',
       categoryId: getCatId('outdoors'),
-      source: 'visitchampaigncounty',
-      sourceEventId: 'allerton-garden-tour-2026',
+      source: 'user',
+      sourceEventId: `user-allerton-${Date.now() + 7}`,
+      isApproved: 1,
     },
     {
       title: 'Craft Beer Festival',
@@ -229,8 +250,9 @@ async function seed() {
       longitude: -88.2434,
       price: '$35',
       categoryId: getCatId('nightlife'),
-      source: 'visitchampaigncounty',
-      sourceEventId: 'craft-beer-festival-2026',
+      source: 'user',
+      sourceEventId: `user-beer-fest-${Date.now() + 8}`,
+      isApproved: 1,
     },
   ]
 
@@ -246,8 +268,9 @@ async function seed() {
   console.log(`Inserted ${inserted} sample events`)
   console.log('\nSeed complete!')
   console.log('\nLogin credentials:')
-  console.log('  Admin: admin@cu-events.com / admin123')
+  console.log('  Admin (business account): admin@cu-events.com / admin123')
   console.log('  Demo business: demo@krannert.illinois.edu / demo123')
+  console.log('  Demo user: user@example.com / user123')
 }
 
 seed()

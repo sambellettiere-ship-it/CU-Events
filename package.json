@@ -8,8 +8,7 @@
     "start": "next start",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx drizzle/migrate.ts",
-    "db:seed": "tsx drizzle/seed.ts",
-    "scrapers:run": "tsx scripts/run-scrapers.ts"
+    "db:seed": "tsx drizzle/seed.ts"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.20",

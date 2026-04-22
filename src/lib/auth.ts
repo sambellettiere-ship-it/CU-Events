@@ -1,7 +1,7 @@
 import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
 import { db } from './db'
-import { businesses } from '../../drizzle/schema'
+import { businesses, users } from '../../drizzle/schema'
 import { eq } from 'drizzle-orm'
 
 const JWT_SECRET = new TextEncoder().encode(
@@ -12,8 +12,9 @@ export interface SessionUser {
   id: number
   email: string
   name: string
-  role: string
-  businessId: number
+  role: string // 'user' | 'business' | 'admin'
+  accountType: 'user' | 'business'
+  businessId?: number // only set for business accounts
 }
 
 export async function createToken(user: SessionUser): Promise<string> {
@@ -56,10 +57,26 @@ export async function requireAdmin(): Promise<SessionUser> {
   return session
 }
 
+export async function requireBusiness(): Promise<SessionUser> {
+  const session = await requireAuth()
+  if (session.accountType !== 'business') {
+    throw new Error('Business account required')
+  }
+  return session
+}
+
 export async function getBusinessById(id: number) {
   const [business] = await db
     .select()
     .from(businesses)
     .where(eq(businesses.id, id))
   return business ?? null
+}
+
+export async function getUserById(id: number) {
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, id))
+  return user ?? null
 }

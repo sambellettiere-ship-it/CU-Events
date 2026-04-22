@@ -20,7 +20,9 @@ export default async function EditEventPage({
   const [event] = await db.select().from(events).where(eq(events.id, eventId))
   if (!event) notFound()
 
-  if (event.businessId !== session.businessId && session.role !== 'admin') {
+  const isOwner = (session.accountType === 'business' && event.businessId === session.businessId)
+    || (session.accountType === 'user' && event.submittedByUserId === session.id)
+  if (!isOwner && session.role !== 'admin') {
     redirect('/dashboard')
   }
 

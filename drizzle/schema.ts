@@ -7,6 +7,17 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/sqlite-core'
 
+export const users = sqliteTable('users', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  email: text('email').notNull().unique(),
+  passwordHash: text('password_hash').notNull(),
+  role: text('role').default('user'), // 'user' | 'admin'
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(datetime('now'))`),
+})
+
 export const businesses = sqliteTable('businesses', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   name: text('name').notNull(),
@@ -55,9 +66,10 @@ export const events = sqliteTable(
     price: text('price'),
     categoryId: integer('category_id').references(() => categories.id),
     businessId: integer('business_id').references(() => businesses.id),
-    source: text('source').notNull().default('business'),
+    submittedByUserId: integer('submitted_by_user_id').references(() => users.id),
+    source: text('source').notNull().default('user'), // 'user' | 'business'
     sourceEventId: text('source_event_id'),
-    isApproved: integer('is_approved').default(1),
+    isApproved: integer('is_approved').default(0),
     isFeatured: integer('is_featured').default(0),
     featuredUntil: text('featured_until'),
     viewCount: integer('view_count').default(0),
@@ -96,22 +108,11 @@ export const sponsoredListings = sqliteTable('sponsored_listings', {
     .default(sql`(datetime('now'))`),
 })
 
-export const scraperRuns = sqliteTable('scraper_runs', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  scraperName: text('scraper_name').notNull(),
-  startedAt: text('started_at').notNull(),
-  finishedAt: text('finished_at'),
-  status: text('status').default('running'), // 'running' | 'success' | 'error'
-  eventsFound: integer('events_found').default(0),
-  eventsInserted: integer('events_inserted').default(0),
-  eventsUpdated: integer('events_updated').default(0),
-  errorMessage: text('error_message'),
-})
-
+export type User = typeof users.$inferSelect
+export type NewUser = typeof users.$inferInsert
 export type Business = typeof businesses.$inferSelect
 export type NewBusiness = typeof businesses.$inferInsert
 export type Category = typeof categories.$inferSelect
 export type Event = typeof events.$inferSelect
 export type NewEvent = typeof events.$inferInsert
 export type SponsoredListing = typeof sponsoredListings.$inferSelect
-export type ScraperRun = typeof scraperRuns.$inferSelect

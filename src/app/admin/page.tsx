@@ -1,5 +1,5 @@
 import { db } from '@/lib/db'
-import { events, businesses, scraperRuns } from '../../../drizzle/schema'
+import { events, businesses, users } from '../../../drizzle/schema'
 import { eq, count, desc } from 'drizzle-orm'
 import Link from 'next/link'
 
@@ -7,13 +7,13 @@ export default async function AdminPage() {
   const [
     [{ totalEvents }],
     [{ totalBusinesses }],
+    [{ totalUsers }],
     [{ pendingEvents }],
-    recentRuns,
   ] = await Promise.all([
     db.select({ totalEvents: count() }).from(events),
     db.select({ totalBusinesses: count() }).from(businesses),
+    db.select({ totalUsers: count() }).from(users),
     db.select({ pendingEvents: count() }).from(events).where(eq(events.isApproved, 0)),
-    db.select().from(scraperRuns).orderBy(desc(scraperRuns.startedAt)).limit(5),
   ])
 
   return (
@@ -31,55 +31,42 @@ export default async function AdminPage() {
           <p className="text-xs text-gray-500 mt-0.5">Businesses</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <p className="text-2xl font-bold text-gray-900">{totalUsers}</p>
+          <p className="text-xs text-gray-500 mt-0.5">Community Users</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
           <p className="text-2xl font-bold text-yellow-600">{pendingEvents}</p>
           <p className="text-xs text-gray-500 mt-0.5">Pending Approval</p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-2xl font-bold text-purple-600">{recentRuns.length}</p>
-          <p className="text-xs text-gray-500 mt-0.5">Recent Scraper Runs</p>
-        </div>
       </div>
 
-      {/* Quick links */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-        <Link href="/admin/events" className="bg-white rounded-xl border border-gray-200 p-5 hover:border-orange-200 transition-colors">
-          <h2 className="font-semibold text-gray-900 mb-1">Manage Events</h2>
-          <p className="text-sm text-gray-500">Approve, reject, or feature events from businesses and scrapers</p>
-        </Link>
-        <Link href="/admin/scrapers" className="bg-white rounded-xl border border-gray-200 p-5 hover:border-purple-200 transition-colors">
-          <h2 className="font-semibold text-gray-900 mb-1">Scrapers</h2>
-          <p className="text-sm text-gray-500">View scraper history and trigger manual runs</p>
-        </Link>
-      </div>
-
-      {/* Recent scraper runs */}
-      {recentRuns.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100">
-            <h2 className="font-semibold text-gray-900">Recent Scraper Runs</h2>
+      {/* Pending approval callout */}
+      {pendingEvents > 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">⏳</span>
+            <div>
+              <p className="font-semibold text-yellow-900">{pendingEvents} event{pendingEvents !== 1 ? 's' : ''} waiting for approval</p>
+              <p className="text-sm text-yellow-700">Review and approve community submissions to publish them.</p>
+            </div>
           </div>
-          <div className="divide-y divide-gray-50">
-            {recentRuns.map((run) => (
-              <div key={run.id} className="px-5 py-3 flex items-center gap-4">
-                <span
-                  className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                    run.status === 'success'
-                      ? 'bg-green-100 text-green-700'
-                      : run.status === 'error'
-                      ? 'bg-red-100 text-red-700'
-                      : 'bg-yellow-100 text-yellow-700'
-                  }`}
-                >
-                  {run.status}
-                </span>
-                <span className="text-sm font-medium text-gray-900">{run.scraperName}</span>
-                <span className="text-xs text-gray-400 ml-auto">{run.startedAt}</span>
-                <span className="text-xs text-gray-500">+{run.eventsInserted} new</span>
-              </div>
-            ))}
-          </div>
+          <Link href="/admin/events?filter=pending" className="bg-yellow-600 hover:bg-yellow-700 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-colors flex-shrink-0">
+            Review Now
+          </Link>
         </div>
       )}
+
+      {/* Quick links */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Link href="/admin/events" className="bg-white rounded-xl border border-gray-200 p-5 hover:border-orange-200 transition-colors">
+          <h2 className="font-semibold text-gray-900 mb-1">Manage Events</h2>
+          <p className="text-sm text-gray-500">Approve, reject, or feature community and business events</p>
+        </Link>
+        <Link href="/admin/businesses" className="bg-white rounded-xl border border-gray-200 p-5 hover:border-blue-200 transition-colors">
+          <h2 className="font-semibold text-gray-900 mb-1">Businesses</h2>
+          <p className="text-sm text-gray-500">View and manage registered business accounts</p>
+        </Link>
+      </div>
     </div>
   )
 }
