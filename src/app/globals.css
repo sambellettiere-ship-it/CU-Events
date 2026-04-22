@@ -5,7 +5,19 @@
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
+@theme {
+  /* Kingfisher design palette */
+  --color-kf-deep:   #045668;
+  --color-kf-teal:   #0d8c94;
+  --color-kf-aqua:   #00abbe;
+  --color-kf-sky:    #45bde8;
+  --color-kf-orange: #f6861f;
+  --color-kf-rust:   #c75027;
+  --color-kf-sand:   #e4b482;
+  --color-kf-cream:  #fde3da;
+}
+
 :root {
-  --cu-orange: #e84a00;
-  --cu-blue: #13294b;
+  --cu-orange: #f6861f;
+  --cu-blue:   #045668;
 }
