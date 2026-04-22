@@ -2,10 +2,8 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
 
 export default function LoginPage() {
-  const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -26,7 +24,7 @@ export default function LoginPage() {
         setError(data.error || 'Login failed')
         return
       }
-      const from = searchParams.get('from')
+      const from = new URLSearchParams(window.location.search).get('from')
       window.location.href = from || '/dashboard'
     } catch {
       setError('Network error. Please try again.')
